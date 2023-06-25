@@ -3,10 +3,26 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema({
-  email: { type: String, required: true },
   username: { type: String, required: true },
-  password: { type: String, required: true },
-  friends_list: { type: Array, required: true, default: [] },
+  googleId: { type: String },
+  picture: { type: String },
+  friends: {
+    type: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: 'User' },
+        status: {
+          type: Number,
+          enums: [
+            -1, // rejected by user
+            0, // request sent to user
+            1, // request received from user
+            2, // friends
+          ],
+        },
+      },
+    ],
+    default: [],
+  },
 });
 
 /* UserSchema.virtual('name').get(function () {

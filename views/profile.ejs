@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title><%= title %></title>
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+</head>
+
+<body>
+  <h1><%= title %></h1>
+  <p>Welcome to <%= `${currentUser.username}'s Profile` %></p>
+  <img src="<%= currentUser.picture %>" alt="profile-pic" />
+  <% if (posts.length > 0) { posts.forEach(post => { %>
+  <div key="<%= post._id %>"><%= post.content %></div>
+  <% })} else { %>
+  <div>No posts found.</div>
+  <% } %>
+</body>
+
+</html>
