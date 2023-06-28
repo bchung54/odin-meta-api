@@ -10,4 +10,8 @@ router.get('/login', (req, res, next) => {
   res.send('this is the login');
 });
 
+router.get('/logout', (req, res, next) => {
+  res.send('this is the logout');
+});
+
 module.exports = router;

@@ -13,9 +13,10 @@ const UserSchema = new Schema({
         status: {
           type: Number,
           enums: [
-            -1, // rejected by user
-            0, // request sent to user
-            1, // request received from user
+            -2, // rejected (status denotes rejected user)
+            -1, // rejecter (status denotes rejecting user)
+            0, // request sent (status denotes receiving user)
+            1, // request received (status denotes sending user)
             2, // friends
           ],
         },
