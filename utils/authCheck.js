@@ -1,9 +1,8 @@
 const authCheck = (req, res, next) => {
   if (!req.user) {
-    res.redirect('/login');
-  } else {
-    return next();
+    return res.redirect('/login');
   }
+  return next();
 };
 
 module.exports = authCheck;

@@ -7,6 +7,14 @@ let friendsRejectedData;
 let postsData;
 let commentsData;
 
+const mockUserData = {
+  _id: '64aa4976fd5a307213966eb4',
+  username: 'mockuser1',
+  facebookId: 'fb_id',
+  googleId: 'google_id',
+  friends: [],
+};
+
 function generateUsers(num) {
   const users = [];
   for (let i = 0; i < num; i++) {
@@ -73,25 +81,25 @@ function generateFriendTrio() {
 }
 
 function generateFriendRejection() {
-  const userId1 = faker.database.mongodbObjectId();
-  const userId2 = faker.database.mongodbObjectId();
+  const rejecterId = faker.database.mongodbObjectId();
+  const rejectedId = faker.database.mongodbObjectId();
   const pair = [
     {
-      _id: userId1,
-      username: faker.internet.userName(),
+      _id: rejecterId,
+      username: 'rejecterUsername',
       friends: [
         {
-          user: userId2,
+          user: rejectedId,
           status: -2,
         },
       ],
     },
     {
-      _id: userId2,
-      username: faker.internet.userName(),
+      _id: rejectedId,
+      username: 'rejectedUsername',
       friends: [
         {
-          user: userId1,
+          user: rejecterId,
           status: -1,
         },
       ],
@@ -140,6 +148,7 @@ commentsData = generateComments(usersData);
 
 module.exports = {
   NUM_OF_USERS,
+  mockUserData,
   usersData,
   friendsTrioData,
   friendsRejectedData,

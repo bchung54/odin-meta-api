@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
-
+// Controllers
+const postController = require('../controllers/postController');
+// Utils
 const authCheck = require('../utils/authCheck');
 
 /* GET index: shows all recent posts ("Timeline" feature) */
-router.get('/', authCheck, postController.get_timeline_posts);
+// *** MOVED TO USERS ***
+// router.get('/', authCheck, postController.get_timeline_posts);
 
 /* GET post info */
 router.get('/:postId', authCheck, postController.get_post_info);

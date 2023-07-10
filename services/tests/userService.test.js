@@ -54,10 +54,19 @@ describe('User service', () => {
       sender = await createUser(Seed.usersData[0]);
       receiver = await createUser(Seed.usersData[1]);
     });
+
     describe('getUsers', () => {
       it('should get sender', async () => {
-        const retrievedUser = await getUsers([sender._id]);
-        expect(retrievedUser[0].equals(sender)).toBe(true);
+        const [retrievedUser] = await getUsers([sender._id]);
+        expect(retrievedUser.equals(sender)).toBe(true);
+      });
+
+      it('should get both users', async () => {
+        const retrievedUsers = await getUsers();
+        expect(retrievedUsers.length).toBe(2);
+        expect(retrievedUsers.map((user) => user.toJSON())).toEqual(
+          expect.arrayContaining([sender.toJSON(), receiver.toJSON()])
+        );
       });
     });
 
@@ -75,7 +84,7 @@ describe('User service', () => {
 
     describe('friendRequest functions', () => {
       it('should send friend request', async () => {
-        await sendFriendRequest(sender._id, receiver._id);
+        await sendFriendRequest(sender, receiver._id);
 
         const [updatedSender, updatedReceiver] = await Promise.all([
           User.findById(sender._id),
@@ -95,7 +104,7 @@ describe('User service', () => {
       });
 
       it('should send and reject friend request', async () => {
-        await sendFriendRequest(sender._id, receiver._id);
+        await sendFriendRequest(sender, receiver._id);
         await rejectFriendRequest(receiver._id, sender._id);
 
         const [updatedSender, updatedReceiver] = await Promise.all([
@@ -116,7 +125,7 @@ describe('User service', () => {
       });
 
       it('should send and accept friend request', async () => {
-        await sendFriendRequest(sender._id, receiver._id);
+        await sendFriendRequest(sender, receiver._id);
         await acceptFriendRequest(receiver._id, sender._id);
 
         const [updatedSender, updatedReceiver] = await Promise.all([
@@ -172,20 +181,58 @@ describe('User service', () => {
       });
     });
 
+    describe('sendFriendRequest', () => {
+      it('should allow user to send friend request to previously rejected user', async () => {
+        // retrieve rejecter user
+        const [[rejecter], [rejected]] = await Promise.all([
+          getUsers([friendsRejectedData[0]._id]),
+          getUsers([friendsRejectedData[1]._id]),
+        ]);
+        // send friend request from rejecter user
+        await sendFriendRequest(rejecter, rejected._id);
+        // retrieve both users
+        const [[updatedRejecter], [updatedRejected]] = await Promise.all([
+          getUsers([friendsRejectedData[0]._id]),
+          getUsers([friendsRejectedData[1]._id]),
+        ]);
+
+        expect(updatedRejecter.friends).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ user: updatedRejected._id, status: 0 }),
+          ])
+        );
+        expect(updatedRejected.friends).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ user: updatedRejecter._id, status: 1 }),
+          ])
+        );
+      });
+    });
+
     describe('deleteUser', () => {
       it('should delete user and remove all connections with users in friend list', async () => {
-        const userToBeDeleted = await getUsers([friendsTrioData[0]._id]);
-        await deleteUser(userToBeDeleted[0]._id);
+        const [userToBeDeleted] = await getUsers([friendsTrioData[0]._id]);
+        await deleteUser(userToBeDeleted._id);
 
-        const deletedUser = await getUsers([friendsTrioData[0]._id]);
         const friends = await getUsers([
           friendsTrioData[1]._id,
           friendsTrioData[2]._id,
         ]);
 
-        expect(deletedUser.length).toBe(0);
+        await expect(getUsers([userToBeDeleted._id])).rejects.toThrow(
+          'No user(s) found.'
+        );
         expect(friends[0].friends.length).toBe(1);
         expect(friends[1].friends.length).toBe(1);
+      });
+
+      it('should throw error if no user deleted', async () => {
+        // random ObjectId
+        const invalidUserId = new mongoose.Types.ObjectId();
+
+        await expect(deleteUser(invalidUserId)).rejects.toThrow(
+          "No user deleted. User was found in 0 other users' friends list and pulled."
+        );
       });
     });
   });

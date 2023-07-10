@@ -1,47 +1,234 @@
-export const get_potential_friends = async (req, res, next) => {
+const mongoose = require('mongoose');
+const {
+  getCommentsByUser,
+  deleteCommentsByUser,
+} = require('../services/commentService');
+const {
+  createPost,
+  getPostsByUsers,
+  deletePostsByUser,
+} = require('../services/postService');
+const {
+  getUsers,
+  updateUsername,
+  sendFriendRequest,
+  rejectFriendRequest,
+  acceptFriendRequest,
+  deleteUser,
+} = require('../services/userService');
+const { body, validationResult } = require('express-validator');
+
+// GET '/api/potential-friends'
+exports.get_potential_friends = async (req, res, next) => {
   res.send('NOT IMPLEMENTED: get_potential_friends');
 };
 
-export const get_user_info = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: get_user_info');
+// GET '/api/:userId'
+exports.get_user_info = async (req, res, next) => {
+  try {
+    const [user] = await getUsers([req.params.userId]);
+
+    return res.status(200).json(user.toJSON());
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 };
 
-export const get_user_posts = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: get_user_posts');
+// GET '/api/:userId/posts'
+exports.get_user_posts = async (req, res, next) => {
+  try {
+    const posts = await getPostsByUsers([req.params.userId]);
+
+    return res.status(200).json({ posts: posts });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 };
 
-export const get_user_comments = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: get_user_comments');
+// GET '/api/:userId/timeline'
+exports.get_timeline_posts = async (req, res, next) => {
+  res.send('NOT IMPLEMENTED: get_timeline_posts');
 };
 
-export const create_new_post = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: create_new_post');
+// GET '/api/:userId/comments'
+exports.get_user_comments = async (req, res, next) => {
+  try {
+    const comments = await getCommentsByUser([req.params.userId]);
+
+    return res.status(200).json({ comments: comments });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 };
 
-export const update_username = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: update_username');
+// POST '/api/:userId/posts'
+exports.create_new_post = [
+  body('content').notEmpty().withMessage('Content is missing.').trim().escape(),
+
+  async (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ message: 'Validation Failed', errors: errors.array() });
+    }
+
+    try {
+      const postData = {
+        user: req.user._id,
+        content: req.body.content,
+      };
+      const newPost = await createPost(postData);
+
+      return res.status(201).json(newPost.toJSON());
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+];
+
+// PATCH '/api/:userId'
+exports.update_username = [
+  body('newUsername')
+    .isLength({ min: 5, max: 99 })
+    .withMessage('Username must be 5-99 characters long (inclusive).')
+    .trim()
+    .escape(),
+
+  async (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ message: 'Validation Failed', errors: errors.array() });
+    }
+
+    try {
+      await updateUsername(req.body.newUsername);
+
+      return res.status(204);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+];
+
+//
+exports.send_friend_request = [
+  body('receiverId')
+    .notEmpty()
+    .withMessage('User to receive request must be specified.')
+    .custom(async (receiverId) => {
+      if (!mongoose.isValidObjectId(receiverId)) {
+        throw new Error('Invalid user id for receiver.');
+      }
+    }),
+
+  async (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ message: 'Validation Failed', errors: errors.array() });
+    }
+
+    try {
+      await sendFriendRequest(req.user._id, req.body.receiverId);
+
+      return res.status(204);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+];
+
+exports.reject_friend_request = [
+  body('receiverId')
+    .notEmpty()
+    .withMessage('User to reject must be specified.')
+    .custom(async (receiverId) => {
+      if (!mongoose.isValidObjectId(receiverId)) {
+        throw new Error('Invalid user id for rejected user.');
+      }
+    }),
+
+  async (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ message: 'Validation Failed', errors: errors.array() });
+    }
+
+    try {
+      await rejectFriendRequest(req.user._id, req.body.receiverId);
+
+      return res.status(204);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+];
+
+exports.accept_friend_request = [
+  body('receiverId')
+    .notEmpty()
+    .withMessage('User to accept must be specified.')
+    .custom(async (receiverId) => {
+      if (!mongoose.isValidObjectId(receiverId)) {
+        throw new Error('Invalid user id for accepted user.');
+      }
+    }),
+
+  async (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res
+        .status(400)
+        .json({ message: 'Validation Failed', errors: errors.array() });
+    }
+
+    try {
+      await acceptFriendRequest(req.user._id, req.body.receiverId);
+
+      return res.status(204);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  },
+];
+
+exports.delete_user_comments = async (req, res, next) => {
+  try {
+    await deleteCommentsByUser(req.user._id);
+
+    return res.status(204);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 };
 
-export const send_friend_request = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: send_friend_request');
+exports.delete_user_posts = async (req, res, next) => {
+  try {
+    await deletePostsByUser(req.user._id);
+
+    return res.status(204);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 };
 
-export const reject_friend_request = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: reject_friend_request');
-};
+exports.delete_user = async (req, res, next) => {
+  try {
+    await deleteUser(req.user._id);
 
-export const accept_friend_request = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: accept_friend_request');
-};
-
-export const delete_user = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: delete_user');
-};
-
-export const delete_user_posts = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: delete_user_posts');
-};
-
-export const delete_user_comments = async (req, res, next) => {
-  res.send('NOT IMPLEMENTED: delete_user_comments');
+    return res.status(204);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 };

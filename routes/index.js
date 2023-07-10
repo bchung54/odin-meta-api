@@ -10,8 +10,17 @@ router.get('/login', (req, res, next) => {
   res.send('this is the login');
 });
 
-router.get('/logout', (req, res, next) => {
-  res.send('this is the logout');
+router.post('/logout', (req, res, next) => {
+  req.logout((err) => {
+    if (err) {
+      return next(err);
+    }
+    res.redirect('/');
+  });
+});
+
+router.get('/api', (req, res, next) => {
+  res.send('this is the api');
 });
 
 module.exports = router;

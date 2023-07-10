@@ -17,25 +17,12 @@ async function addComment(postId, commentData) {
   }
 }
 
-async function likeComment(commentId, userId) {
-  try {
-    const comment = await Comment.findById(commentId);
-    if (comment.likes.includes(userId)) {
-      return;
-    }
-    await Comment.updateOne({ _id: commentId }, { $push: { likes: userId } });
-    return;
-  } catch (err) {
-    throw new Error(err);
-  }
-}
-
 async function getComments(commentIds) {
   try {
-    if (commentIds.length === 0) {
-      return [];
-    }
     const comments = await Comment.find({ _id: { $in: commentIds } });
+    if (comments.length === 0) {
+      throw new Error('No comment(s) found.');
+    }
     return comments;
   } catch (err) {
     throw new Error(err);
@@ -51,9 +38,39 @@ async function getCommentsByUser(userId) {
   }
 }
 
+async function likeComment(commentId, userId) {
+  try {
+    const comment = await Comment.findById(commentId);
+    if (comment.likes.includes(userId)) {
+      throw new Error('This comment has already been liked by this user.');
+    }
+    await Comment.updateOne({ _id: commentId }, { $push: { likes: userId } });
+    return;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
+async function updateComment(commentId, newContent) {
+  try {
+    await Comment.updateOne(
+      { _id: commentId },
+      { $set: { content: newContent } }
+    );
+    return;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
 async function deleteComments(commentIds) {
   try {
-    await Comment.deleteMany({ _id: { $in: commentIds } });
+    const deleteManyReport = await Comment.deleteMany({
+      _id: { $in: commentIds },
+    });
+    if (deleteManyReport.deletedCount === 0) {
+      throw new Error('No comment(s) deleted.');
+    }
     return;
   } catch (err) {
     throw new Error(err);
@@ -62,7 +79,10 @@ async function deleteComments(commentIds) {
 
 async function deleteCommentsByUser(userId) {
   try {
-    await Comment.deleteMany({ user: userId });
+    const deleteManyReport = await Comment.deleteMany({ user: userId });
+    if (deleteManyReport.deletedCount === 0) {
+      throw new Error('No comment(s) deleted.');
+    }
     return;
   } catch (err) {
     throw new Error(err);
@@ -71,9 +91,10 @@ async function deleteCommentsByUser(userId) {
 
 module.exports = {
   addComment,
-  likeComment,
   getComments,
   getCommentsByUser,
+  likeComment,
+  updateComment,
   deleteComments,
   deleteCommentsByUser,
 };

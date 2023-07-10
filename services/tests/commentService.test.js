@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 const { createUser } = require('../userService');
-const { createPost, getPosts } = require('../postService');
+const { createPost } = require('../postService');
 const {
   addComment,
   likeComment,
   getComments,
   getCommentsByUser,
+  updateComment,
   deleteComments,
   deleteCommentsByUser,
 } = require('../commentService');
@@ -45,17 +46,15 @@ describe('Comment service', () => {
 
     describe('addComment', () => {
       it('should add new comment to a post', async () => {
-        // Create comment and add to post
+        // create comment and add to post
         const newComment = await addComment(validPost._id, validCommentData);
-
-        // Retrieve post
+        // retrieve post
         const retrievedPost = await Post.findById(validPost._id);
 
-        // Check post for comment
+        // check post for comment
         expect(retrievedPost.comments.length).toBe(1);
         expect(retrievedPost.comments[0]).toEqual(newComment._id);
-
-        // Check comment properties
+        // check comment properties
         expect(mongoose.isValidObjectId(newComment._id)).toBe(true);
         expect(newComment.user).toEqual(
           new mongoose.Types.ObjectId(validCommentData.user)
@@ -73,30 +72,27 @@ describe('Comment service', () => {
       });
 
       it('should like a new comment', async () => {
-        // Like added comment
+        // like added comment
         await likeComment(newComment._id, validUser._id);
-
-        // Retreive liked comment
+        // retreive liked comment
         const likedComment = await Comment.findById(newComment._id);
 
-        // Check liked comment properties
         expect(likedComment.likes.length).toBe(1);
         expect(likedComment.likes).toEqual(
           expect.arrayContaining([validUser._id])
         );
       });
 
-      it('should only like a comment once maximum', async () => {
-        // Like added comment
+      it('should throw an error if comment is liked more than once', async () => {
+        // like added comment
         await likeComment(newComment._id, validUser._id);
-
-        // Like comment a second time with same user
-        await likeComment(newComment._id, validUser._id);
-
-        // Retrieve liked comment
+        // like comment a second time with same user
+        await expect(
+          likeComment(newComment._id, validUser._id)
+        ).rejects.toThrow('This comment has already been liked by this user.');
+        // retrieve liked comment after second attempt to like
         const likedComment = await Comment.findById(newComment._id);
 
-        // Check liked comment properties
         expect(likedComment.likes.length).toBe(1);
         expect(likedComment.likes).toEqual(
           expect.arrayContaining([validUser._id])
@@ -118,17 +114,25 @@ describe('Comment service', () => {
 
     describe('getComments', () => {
       it('should get all comments of a post', async () => {
-        // Retrieve post with comments
+        // retrieve post with comments
         const retrievedPost = await Post.findById(Seed.postsData[0]._id);
-        // Retrieve comments
+        // retrieve comments
         const retrievedComments = await getComments(retrievedPost.comments);
 
-        expect(retrievedComments.length).toBe(7);
+        await expect(retrievedComments.length).toBe(7);
+      });
+      it('should throw an error if no comments found', async () => {
+        // random objectID
+        const commentId = new mongoose.Types.ObjectId();
+
+        await expect(getComments([commentId])).rejects.toThrow(
+          'No comment(s) found.'
+        );
       });
     });
     describe('getCommentsByUser', () => {
       it('should get no comments for first user', async () => {
-        // Retrieve comments
+        // retrieve comments
         const retrievedComments = await getCommentsByUser(
           Seed.usersData[0]._id
         );
@@ -137,7 +141,7 @@ describe('Comment service', () => {
       });
 
       it('should get all comments by a user with comments', async () => {
-        // Retrieve comments
+        // retrieve comments
         const retrievedComments = await getCommentsByUser(
           Seed.usersData[1]._id
         );
@@ -153,8 +157,22 @@ describe('Comment service', () => {
       });
     });
 
+    describe('updateComment', () => {
+      it('should update comment with new content', async () => {
+        // update and then retrieve updated comment
+        await updateComment(
+          Seed.commentsData[0]._id,
+          'Content has been revised.'
+        );
+        const [updatedComment] = await getComments([Seed.commentsData[0]._id]);
+
+        expect(updatedComment.content).toBe('Content has been revised.');
+      });
+    });
+
     describe('deleteComments', () => {
       it('should delete one comment', async () => {
+        // delete comments and then attempt to retrieve
         await deleteComments([Seed.commentsData[0]._id]);
         const allRetrievedComments = await getCommentsByUser(
           Seed.commentsData[0].user
@@ -162,16 +180,35 @@ describe('Comment service', () => {
 
         expect(allRetrievedComments.length).toBe(0);
       });
+
+      it('should throw an error if no comments to delete', async () => {
+        // random objectID
+        const commentId = new mongoose.Types.ObjectId();
+
+        await expect(deleteComments([commentId])).rejects.toThrow(
+          'No comment(s) deleted.'
+        );
+      });
     });
 
     describe('deleteCommentsByUser', () => {
       it('should delete all comments by a user with comments', async () => {
+        // delete comments and then attempt to retrieve
         await deleteCommentsByUser(Seed.usersData[1]._id);
         const retrievedCommentsByUser = await getCommentsByUser(
           Seed.usersData[1]._id
         );
 
         expect(retrievedCommentsByUser.length).toBe(0);
+      });
+
+      it('should throw an error if no comments to delete', async () => {
+        // random objectID
+        const userId = new mongoose.Types.ObjectId();
+
+        await expect(deleteCommentsByUser([userId])).rejects.toThrow(
+          'No comment(s) deleted.'
+        );
       });
     });
   });

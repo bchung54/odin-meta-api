@@ -5,6 +5,9 @@ const {
   likePost,
   getPosts,
   getPostsByUsers,
+  updatePost,
+  deletePosts,
+  deletePostsByUser,
 } = require('../postService');
 // models
 const Post = require('../../models/post');
@@ -49,7 +52,6 @@ describe('Post service', () => {
         expect(Array.isArray(newPost.comments)).toBe(true);
         expect(Array.isArray(newPost.likes)).toBe(true);
         expect(newPost.createdAt).toBeInstanceOf(Date);
-
         // check virtuals
         expect(newPost.url).toBe(`/post/${newPost._id}`);
       });
@@ -62,13 +64,10 @@ describe('Post service', () => {
       });
 
       it('should like a new post', async () => {
-        // like post
+        // like post and then retrieve liked post
         await likePost(newPost._id, validUser._id);
-
-        // retrieve liked post
         const likedPost = await Post.findById(newPost._id);
 
-        // check liked post properties
         expect(likedPost.likes.length).toBe(1);
         expect(likedPost.likes).toEqual(
           expect.arrayContaining([validUser._id])
@@ -78,14 +77,13 @@ describe('Post service', () => {
       it('should only like a post once maximum', async () => {
         // like post
         await likePost(newPost._id, validUser._id);
-
         // like post a second time with same user
-        await likePost(newPost._id, validUser._id);
-
+        await expect(likePost(newPost._id, validUser._id)).rejects.toThrow(
+          'This post has already been liked by this user.'
+        );
         // retrieve liked post
         const likedPost = await Post.findById(newPost._id);
 
-        // check liked post properties
         expect(likedPost.likes.length).toBe(1);
         expect(likedPost.likes).toEqual(
           expect.arrayContaining([validUser._id])
@@ -106,9 +104,11 @@ describe('Post service', () => {
         expect(retrievedPosts.length).toBe(Seed.NUM_OF_USERS);
       });
 
-      it('should get no posts', async () => {
-        const retrievedPosts = await getPosts([]);
-        expect(retrievedPosts.length).toBe(0);
+      it('should throw error when no posts found', async () => {
+        // random ObjectId
+        const postId = new mongoose.Types.ObjectId();
+
+        await expect(getPosts([postId])).rejects.toThrow('No post(s) found.');
       });
 
       it('should get two posts', async () => {
@@ -116,6 +116,7 @@ describe('Post service', () => {
           Seed.postsData[0]._id,
           Seed.postsData[1]._id,
         ]);
+
         expect(retrievedPosts.length).toBe(2);
       });
     });
@@ -125,7 +126,63 @@ describe('Post service', () => {
           Seed.usersData[0]._id,
           Seed.usersData[1]._id,
         ]);
+
         expect(userPost.length).toBe(2);
+      });
+
+      it('should throw error when no posts found', async () => {
+        // random ObjectId
+        const postId = new mongoose.Types.ObjectId();
+
+        await expect(getPostsByUsers([postId])).rejects.toThrow(
+          'No post(s) found.'
+        );
+      });
+    });
+
+    describe('updatePost', () => {
+      it('should update post with new content', async () => {
+        // update post and then retrieve updated post
+        await updatePost(Seed.postsData[2]._id, 'updated post content');
+        const [updatedPost] = await getPosts([Seed.postsData[2]._id]);
+
+        expect(updatedPost.content).toBe('updated post content');
+      });
+    });
+
+    describe('deletePosts', () => {
+      it('should delete post and throw error when trying to retrieve it', async () => {
+        await deletePosts([Seed.postsData[2]._id]);
+        await expect(getPosts([Seed.postsData[2]._id])).rejects.toThrow(
+          'No post(s) found.'
+        );
+      });
+
+      it('should throw error when no post deleted', async () => {
+        // random ObjectId
+        const postId = new mongoose.Types.ObjectId();
+
+        await expect(deletePosts([postId])).rejects.toThrow(
+          'No post(s) deleted.'
+        );
+      });
+    });
+
+    describe('deletePostsByUser', () => {
+      it('should delete posts from user and throw error when trying to retrieve it', async () => {
+        await deletePostsByUser([Seed.usersData[2]._id]);
+        await expect(getPostsByUsers([Seed.usersData[2]._id])).rejects.toThrow(
+          'No post(s) found.'
+        );
+      });
+
+      it('should throw error when no post deleted', async () => {
+        // random ObjectId
+        const userId = new mongoose.Types.ObjectId();
+
+        await expect(deletePostsByUser([userId])).rejects.toThrow(
+          'No post(s) deleted.'
+        );
       });
     });
   });

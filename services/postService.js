@@ -9,29 +9,16 @@ async function createPost(postData) {
   }
 }
 
-async function likePost(postId, userId) {
-  try {
-    const post = await Post.findById(postId);
-    if (post.likes.includes(userId)) {
-      return;
-    }
-    await Post.updateOne({ _id: postId }, { $push: { likes: userId } });
-    return;
-  } catch (err) {
-    throw new Error(err);
-  }
-}
-
 async function getPosts(postIds) {
   try {
     if (!postIds) {
       const posts = await Post.find({});
       return posts;
     }
-    if (postIds.length === 0) {
-      return [];
-    }
     const posts = await Post.find({ _id: { $in: postIds } });
+    if (posts.length === 0) {
+      throw new Error('No post(s) found.');
+    }
     return posts;
   } catch (err) {
     throw new Error(err);
@@ -40,15 +27,36 @@ async function getPosts(postIds) {
 
 async function getPostsByUsers(userIds) {
   try {
-    if (!userIds) {
-      const posts = await Post.find({});
-      return posts;
-    }
-    if (userIds.length === 0) {
-      return [];
-    }
     const posts = await Post.find({ user: { $in: userIds } });
+    if (posts.length === 0) {
+      throw new Error('No post(s) found.');
+    }
     return posts;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
+async function likePost(postId, userId) {
+  try {
+    const [post] = await getPosts([postId]);
+    if (post.likes.includes(userId)) {
+      throw new Error('This post has already been liked by this user.');
+    }
+    await Post.updateOne({ _id: postId }, { $push: { likes: userId } });
+    return;
+  } catch (err) {
+    throw new Error(err);
+  }
+}
+
+async function updatePost(postId, updatedContent) {
+  try {
+    await Post.updateOne(
+      { _id: postId },
+      { $set: { content: updatedContent } }
+    );
+    return;
   } catch (err) {
     throw new Error(err);
   }
@@ -56,7 +64,10 @@ async function getPostsByUsers(userIds) {
 
 async function deletePosts(postIds) {
   try {
-    await Post.deleteMany({ _id: { $in: postIds } });
+    const deleteManyResult = await Post.deleteMany({ _id: { $in: postIds } });
+    if (deleteManyResult.deletedCount === 0) {
+      throw new Error('No post(s) deleted.');
+    }
     return;
   } catch (err) {
     throw new Error(err);
@@ -65,7 +76,10 @@ async function deletePosts(postIds) {
 
 async function deletePostsByUser(userId) {
   try {
-    await Post.deleteMany({ user: userId });
+    const deleteManyResult = await Post.deleteMany({ user: userId });
+    if (deleteManyResult.deletedCount === 0) {
+      throw new Error('No post(s) deleted.');
+    }
     return;
   } catch (err) {
     throw new Error(err);
@@ -74,9 +88,10 @@ async function deletePostsByUser(userId) {
 
 module.exports = {
   createPost,
-  likePost,
   getPosts,
   getPostsByUsers,
+  likePost,
+  updatePost,
   deletePosts,
   deletePostsByUser,
 };
