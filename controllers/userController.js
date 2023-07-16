@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 const {
   getCommentsByUser,
-  deleteCommentsByUser,
+  // deleteCommentsByUser,
 } = require('../services/commentService');
 const {
   getPostsByUsers,
-  deletePostsByUser,
+  // deletePostsByUser,
 } = require('../services/postService');
 const {
   getUsers,
@@ -13,7 +13,7 @@ const {
   sendFriendRequest,
   rejectFriendRequest,
   acceptFriendRequest,
-  deleteUser,
+  // deleteUser,
 } = require('../services/userService');
 const { body, validationResult } = require('express-validator');
 
