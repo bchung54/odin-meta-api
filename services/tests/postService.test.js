@@ -130,12 +130,12 @@ describe('Post service', () => {
         expect(userPost.length).toBe(2);
       });
 
-      it('should throw error when no posts found', async () => {
+      it('should throw error when no posts found for a user', async () => {
         // random ObjectId
-        const postId = new mongoose.Types.ObjectId();
+        const userId = new mongoose.Types.ObjectId();
 
-        await expect(getPostsByUsers([postId])).rejects.toThrow(
-          'No post(s) found.'
+        await expect(getPostsByUsers([userId])).rejects.toThrow(
+          'Error: No user(s) found.'
         );
       });
     });
@@ -143,8 +143,10 @@ describe('Post service', () => {
     describe('updatePost', () => {
       it('should update post with new content', async () => {
         // update post and then retrieve updated post
-        await updatePost(Seed.postsData[2]._id, 'updated post content');
-        const [updatedPost] = await getPosts([Seed.postsData[2]._id]);
+        const updatedPost = await updatePost(
+          Seed.postsData[2]._id,
+          'updated post content'
+        );
 
         expect(updatedPost.content).toBe('updated post content');
       });
@@ -171,17 +173,16 @@ describe('Post service', () => {
     describe('deletePostsByUser', () => {
       it('should delete posts from user and throw error when trying to retrieve it', async () => {
         await deletePostsByUser([Seed.usersData[2]._id]);
-        await expect(getPostsByUsers([Seed.usersData[2]._id])).rejects.toThrow(
-          'No post(s) found.'
-        );
+        const postsRemaining = await getPostsByUsers([Seed.usersData[2]._id]);
+        expect(postsRemaining).toEqual([]);
       });
 
-      it('should throw error when no post deleted', async () => {
+      it('should throw error when user not found', async () => {
         // random ObjectId
         const userId = new mongoose.Types.ObjectId();
 
         await expect(deletePostsByUser([userId])).rejects.toThrow(
-          'No post(s) deleted.'
+          'Error: No post(s) deleted.'
         );
       });
     });

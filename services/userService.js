@@ -40,11 +40,8 @@ async function getPotentialFriends(userId) {
   }
 }
 
-async function updateUsername(updatedData) {
+/* async function updateUsername(updatedData) {
   try {
-    // check user exists *** ADD TO CONTROLLER ***
-    // await getUsers([updatedData._id]);
-
     await User.updateOne(
       { _id: updatedData._id },
       { $set: { username: updatedData.username } }
@@ -53,20 +50,12 @@ async function updateUsername(updatedData) {
   } catch (err) {
     throw new Error(err);
   }
-}
+} */
 
 async function sendFriendRequest(sender, receiverId) {
   try {
-    // check that users exist *** ADD TO CONTROLLER ***
-    /* const users = await getUsers([senderId, receiverId]);
-    const [sender, receiver] = users;
-    if (!receiver) {
-      throw new Error(
-        'One or both users not found. Two valid users needed for friend request.'
-      );
-    } */
     const receiverFriendObj = sender.friends.find(
-      (friend) => friend.user.toString() == receiverId
+      (friend) => friend.user.toString() === receiverId
     );
 
     if (receiverFriendObj && receiverFriendObj.status === -2) {
@@ -89,25 +78,22 @@ async function sendFriendRequest(sender, receiverId) {
         ),
       ]);
       return;
-    }
-
-    await Promise.all([
-      User.updateOne(
-        { _id: sender._id },
-        {
-          $push: { friends: { user: receiverId, status: 0 } },
-        }
-      ),
-      User.updateOne(
-        { _id: receiverId },
-        {
-          $push: { friends: { user: sender._id, status: 1 } },
-        }
-      ),
-    ]);
-
-    // *** ADD TO CONTROLLER ***
-    /* else {
+    } else if (receiverFriendObj === undefined) {
+      await Promise.all([
+        User.updateOne(
+          { _id: sender._id },
+          {
+            $push: { friends: { user: receiverId, status: 0 } },
+          }
+        ),
+        User.updateOne(
+          { _id: receiverId },
+          {
+            $push: { friends: { user: sender._id, status: 1 } },
+          }
+        ),
+      ]);
+    } else {
       let message;
       switch (receiverFriendObj.status) {
         case 0:
@@ -126,34 +112,13 @@ async function sendFriendRequest(sender, receiverId) {
           throw new Error('Friend status code out of range.');
       }
       throw new Error(`Unable to send friend request: ${message}`);
-    } */
+    }
   } catch (err) {
     throw new Error(err);
   }
 }
 async function rejectFriendRequest(rejecterId, rejectedId) {
   try {
-    // check that users exist *** ADD TO CONTROLLER ***
-    /* const users = await getUsers([rejecterId, rejectedId]);
-    const [rejecter, rejected] = users; // rejecter received request, rejected sent request
-    if (!rejected) {
-      throw new Error(
-        'One or both users not found. Two valid users needed for this operation.'
-      );
-    } */
-
-    // *** ADD TO CONTROLLER ***
-    /* const rejectedFriendObj = rejecter.friends.find(
-      (friend) => friend.user.toString() == rejected._id
-    );
-
-    if (rejectedFriendObj === undefined) {
-      throw new Error('No request found.');
-    }
-    if (rejectedFriendObj.status !== 1) {
-      throw new Error('No request to reject for this user.');
-    }
- */
     await Promise.all([
       User.updateOne(
         { _id: rejectedId, 'friends.user': rejecterId },
@@ -173,27 +138,6 @@ async function rejectFriendRequest(rejecterId, rejectedId) {
 
 async function acceptFriendRequest(acceptingId, acceptedId) {
   try {
-    // check that users exist *** ADD TO CONTROLLER ***
-    /* const users = await getUsers([acceptingId, acceptedId]);
-    const [accepting, accepted] = users;
-    if (!accepted) {
-      throw new Error(
-        'One or both users not found. Two valid users needed for this operation.'
-      );
-    } */
-
-    // *** ADD TO CONTROLLER ***
-    /* const acceptedFriendObj = accepting.friends.find(
-      (friend) => friend.user.toJSON() == acceptedId
-    );
-
-    if (acceptedFriendObj === undefined) {
-      throw new Error('No request found.');
-    }
-    if (acceptedFriendObj.status !== 1) {
-      throw new Error('No request to accept for this user.');
-    } */
-
     await Promise.all([
       User.updateOne(
         { _id: acceptingId, 'friends.user': acceptedId },
@@ -231,7 +175,7 @@ module.exports = {
   createUser,
   getUsers,
   getPotentialFriends,
-  updateUsername,
+  // updateUsername,
   sendFriendRequest,
   rejectFriendRequest,
   acceptFriendRequest,

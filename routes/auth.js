@@ -36,4 +36,8 @@ router.get('/mock', passport.authenticate('mock'), authCheck, (req, res) => {
   res.status(200).json({ message: 'mock successful' });
 });
 
+router.get('/mock2', passport.authenticate('mock2'), authCheck, (req, res) => {
+  res.status(200).json({ message: 'mock successful' });
+});
+
 module.exports = router;

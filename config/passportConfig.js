@@ -6,7 +6,7 @@ const JwtStrategy = require('passport-jwt').Strategy,
 
 const User = require('../models/user');
 const MockStrategy = require('passport-mock-strategy');
-const { mockUserData } = require('../seeds');
+const { mockUserData, mockSecondUserData } = require('../seeds');
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -124,3 +124,23 @@ const mockVerify = async (user, done) => {
 };
 
 passport.use('mock', new MockStrategy(mockOpts, mockVerify));
+
+const mockOpts2 = {
+  user: mockSecondUserData,
+};
+
+const mockVerify2 = async (user, done) => {
+  try {
+    const currentUser = await User.findOne({ username: user.username });
+    if (currentUser) {
+      return done(null, currentUser);
+    } else {
+      const newUser = await User.create(user);
+      return done(null, newUser);
+    }
+  } catch (err) {
+    return done(err);
+  }
+};
+
+passport.use('mock2', new MockStrategy(mockOpts2, mockVerify2));

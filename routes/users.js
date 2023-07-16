@@ -25,17 +25,8 @@ router.get('/:userId', authCheck, userController.get_user_info);
 /* GET all user posts */
 router.get('/:userId/posts', authCheck, userController.get_user_posts);
 
-/* GET user's timeline posts */
-router.get('/:userId/timeline', authCheck, userController.get_timeline_posts);
-
 /* GET all user comments */
 router.get('/:userId/comments', authCheck, userController.get_user_comments);
-
-/* POST new user post */
-router.post('/:userId/posts', authCheck, userController.create_new_post);
-
-/* PATCH user info */
-router.patch('/:userId', authCheck, userController.update_username);
 
 /* PATCH send friend request */
 router.patch(
@@ -59,16 +50,16 @@ router.patch(
 );
 
 /* DELETE all user comments */
-router.delete(
+/* router.delete(
   '/:userId/comments',
   authCheck,
   userController.delete_user_comments
-);
+); */
 
 /* DELETE all user posts */
-router.delete('/:userId/posts', authCheck, userController.delete_user_posts);
+// router.delete('/:userId/posts', authCheck, userController.delete_user_posts);
 
 /* DELETE user */
-router.delete('/:userId', authCheck, userController.delete_user);
+// router.delete('/:userId', authCheck, userController.delete_user);
 
 module.exports = router;

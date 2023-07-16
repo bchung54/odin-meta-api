@@ -23,4 +23,11 @@ router.get('/api', (req, res, next) => {
   res.send('this is the api');
 });
 
+router.get('/account', (req, res, next) => {
+  res.send('this is your account page');
+});
+
+/* PATCH user info */
+//router.patch('/account', authCheck, userController.update_username);
+
 module.exports = router;

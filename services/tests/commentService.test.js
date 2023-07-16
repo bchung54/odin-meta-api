@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
 const { createUser } = require('../userService');
-const { createPost } = require('../postService');
+const { createPost, getPosts } = require('../postService');
 const {
   addComment,
   likeComment,
   getComments,
   getCommentsByUser,
   updateComment,
-  deleteComments,
-  deleteCommentsByUser,
+  deleteComment,
+  //deleteCommentsByUser,
 } = require('../commentService');
 // models
 const User = require('../../models/user');
@@ -73,9 +73,7 @@ describe('Comment service', () => {
 
       it('should like a new comment', async () => {
         // like added comment
-        await likeComment(newComment._id, validUser._id);
-        // retreive liked comment
-        const likedComment = await Comment.findById(newComment._id);
+        const likedComment = await likeComment(newComment._id, validUser._id);
 
         expect(likedComment.likes.length).toBe(1);
         expect(likedComment.likes).toEqual(
@@ -85,18 +83,22 @@ describe('Comment service', () => {
 
       it('should throw an error if comment is liked more than once', async () => {
         // like added comment
-        await likeComment(newComment._id, validUser._id);
+        const likedComment = await likeComment(newComment._id, validUser._id);
         // like comment a second time with same user
         await expect(
           likeComment(newComment._id, validUser._id)
         ).rejects.toThrow('This comment has already been liked by this user.');
-        // retrieve liked comment after second attempt to like
-        const likedComment = await Comment.findById(newComment._id);
 
         expect(likedComment.likes.length).toBe(1);
         expect(likedComment.likes).toEqual(
           expect.arrayContaining([validUser._id])
         );
+      });
+
+      it('should throw an error if comment is not found', async () => {
+        await expect(
+          likeComment(new mongoose.Types.ObjectId(), validUser._id)
+        ).rejects.toThrow('No comment(s) found.');
       });
     });
   });
@@ -160,38 +162,68 @@ describe('Comment service', () => {
     describe('updateComment', () => {
       it('should update comment with new content', async () => {
         // update and then retrieve updated comment
-        await updateComment(
+        const updatedComment = await updateComment(
           Seed.commentsData[0]._id,
           'Content has been revised.'
         );
-        const [updatedComment] = await getComments([Seed.commentsData[0]._id]);
 
         expect(updatedComment.content).toBe('Content has been revised.');
       });
+
+      it('should throw an error if no comment found to update', async () => {
+        await expect(
+          updateComment(
+            new mongoose.Types.ObjectId(),
+            'No comment for this content.'
+          )
+        ).rejects.toThrow('No comment found to update.');
+      });
     });
 
-    describe('deleteComments', () => {
+    describe('deleteComment', () => {
       it('should delete one comment', async () => {
+        const commentId = Seed.commentsData[0]._id;
+        // initial comments
+        const initialComments = await getCommentsByUser(
+          Seed.commentsData[0].user
+        );
+        expect(initialComments.length).toBe(1);
+
+        const [postWithComments] = await getPosts([Seed.postsData[0]]);
+        expect(postWithComments.comments.length).toBe(7);
+        expect(
+          postWithComments.comments.map((comment) => comment.toString())
+        ).toEqual(expect.arrayContaining([commentId]));
+
         // delete comments and then attempt to retrieve
-        await deleteComments([Seed.commentsData[0]._id]);
+        const updatedPost = await deleteComment(
+          commentId,
+          Seed.postsData[0]._id
+        );
+
         const allRetrievedComments = await getCommentsByUser(
           Seed.commentsData[0].user
         );
-
         expect(allRetrievedComments.length).toBe(0);
+
+        expect(updatedPost.comments.length).toBe(6);
+        expect(
+          updatedPost.comments.map((comment) => comment.toString())
+        ).not.toEqual(expect.arrayContaining([commentId]));
       });
 
       it('should throw an error if no comments to delete', async () => {
         // random objectID
         const commentId = new mongoose.Types.ObjectId();
+        const postId = new mongoose.Types.ObjectId();
 
-        await expect(deleteComments([commentId])).rejects.toThrow(
-          'No comment(s) deleted.'
+        await expect(deleteComment(commentId, postId)).rejects.toThrow(
+          'No post modified.'
         );
       });
     });
 
-    describe('deleteCommentsByUser', () => {
+    /* describe('deleteCommentsByUser', () => {
       it('should delete all comments by a user with comments', async () => {
         // delete comments and then attempt to retrieve
         await deleteCommentsByUser(Seed.usersData[1]._id);
@@ -210,6 +242,6 @@ describe('Comment service', () => {
           'No comment(s) deleted.'
         );
       });
-    });
+    }); */
   });
 });

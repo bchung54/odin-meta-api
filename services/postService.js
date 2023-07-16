@@ -1,4 +1,5 @@
 const Post = require('../models/post');
+const { getUsers } = require('./userService');
 
 async function createPost(postData) {
   try {
@@ -27,13 +28,10 @@ async function getPosts(postIds) {
 
 async function getPostsByUsers(userIds) {
   try {
-    const posts = await Post.find({ user: { $in: userIds } });
-    if (posts.length === 0) {
-      throw new Error('No post(s) found.');
-    }
-    return posts;
+    await getUsers(userIds);
+    return await Post.find({ user: { $in: userIds } });
   } catch (err) {
-    throw new Error(err);
+    throw new Error(err.message);
   }
 }
 
@@ -56,7 +54,8 @@ async function updatePost(postId, updatedContent) {
       { _id: postId },
       { $set: { content: updatedContent } }
     );
-    return;
+    const [updatedPost] = await getPosts([postId]);
+    return updatedPost;
   } catch (err) {
     throw new Error(err);
   }
@@ -74,7 +73,7 @@ async function deletePosts(postIds) {
   }
 }
 
-async function deletePostsByUser(userId) {
+/* async function deletePostsByUser(userId) {
   try {
     const deleteManyResult = await Post.deleteMany({ user: userId });
     if (deleteManyResult.deletedCount === 0) {
@@ -84,7 +83,7 @@ async function deletePostsByUser(userId) {
   } catch (err) {
     throw new Error(err);
   }
-}
+} */
 
 module.exports = {
   createPost,
@@ -93,5 +92,5 @@ module.exports = {
   likePost,
   updatePost,
   deletePosts,
-  deletePostsByUser,
+  // deletePostsByUser,
 };

@@ -12,7 +12,46 @@ const mockUserData = {
   username: 'mockuser1',
   facebookId: 'fb_id',
   googleId: 'google_id',
-  friends: [],
+  friends: [
+    {
+      _id: faker.database.mongodbObjectId(),
+      status: 1,
+      user: '64aa4976fd5a307213966eb5',
+    },
+    {
+      _id: faker.database.mongodbObjectId(),
+      status: 1,
+      user: '64aa4976fd5a307213966eb6',
+    },
+  ],
+};
+
+const mockSecondUserData = {
+  _id: '64aa4976fd5a307213966eb5',
+  username: 'mockuser2',
+  facebookId: 'fb_id2',
+  googleId: 'google_id2',
+  friends: [
+    {
+      _id: faker.database.mongodbObjectId(),
+      status: 0,
+      user: '64aa4976fd5a307213966eb4',
+    },
+  ],
+};
+
+const mockThirdUserData = {
+  _id: '64aa4976fd5a307213966eb6',
+  username: 'mockuser3',
+  facebookId: 'fb_id3',
+  googleId: 'google_id3',
+  friends: [
+    {
+      _id: faker.database.mongodbObjectId(),
+      status: 0,
+      user: '64aa4976fd5a307213966eb4',
+    },
+  ],
 };
 
 function generateUsers(num) {
@@ -149,6 +188,8 @@ commentsData = generateComments(usersData);
 module.exports = {
   NUM_OF_USERS,
   mockUserData,
+  mockSecondUserData,
+  mockThirdUserData,
   usersData,
   friendsTrioData,
   friendsRejectedData,
